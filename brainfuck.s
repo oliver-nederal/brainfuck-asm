@@ -137,6 +137,19 @@ brainfuck:
 
 		# Accept input and write at DP (,)
 		accept_input:
+		    pushq %rdi
+			pushq %r8
+			pushq %r9
+			subq $8, %rsp
+
+			call getchar
+
+			addq $8, %rsp
+			popq %r9
+			popq %r8
+			popq %rdi
+
+			movb %al, DATA(%r9)
 			jmp continue
 
 		# [
