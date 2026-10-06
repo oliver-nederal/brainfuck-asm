@@ -7,6 +7,42 @@ DATA: .skip 64 * 1024
 BRACKETS: .skip 64 * 1024 * 2 * 2
 .text
 
+# Arguments: RDI - pointer to null terminated instruction string
+create_bracket_table:
+	pushq %rbp
+	movq %rsp, %rbp
+
+	# When open bracket, push its IP to stack
+	# When close bracket, pop off stack and add both pairs (open, close) and (close, open)
+
+	xor %ax, %ax # i = 0
+	create_bracket_table_loop:
+		cmp $0, (%rdi, %ax)
+		je create_bracket_table_loop_done
+		
+		cmp $'[', (%rdi, %ax)
+		je create_bracket_table_open
+		cmp $']', (%rdi, %ax)
+		je create_bracket_table_close
+		jmp create_bracket_table_loop_continue
+
+		create_bracket_table_open:
+			pushw %ax
+			jmp create_bracket_table_loop_continue
+		create_bracket_table_close:
+			popw %cx
+			movq %cx, (BRACKETS, 2, %ax)
+			movq %ax, (BRACKETS, 2, %cx)
+			jmp create_bracket_table_loop_continue
+
+		create_bracket_table_loop_continue:
+		inc %ax
+
+	create_bracket_table_loop_done:
+
+	movq %rbp, %rsp
+	popq %rbp
+	ret
 
 brainfuck:
 	pushq %rbp
