@@ -38,6 +38,7 @@ create_bracket_table:
 
 		create_bracket_table_loop_continue:
 		inc %ax
+		jmp create_bracket_table_loop
 
 	create_bracket_table_loop_done:
 
