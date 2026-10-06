@@ -20,7 +20,7 @@ create_bracket_table:
 	create_bracket_table_loop:
 		cmpb $0, (%rdi, %rax)
 		je create_bracket_table_loop_done
-		
+
 		cmpb $'[', (%rdi, %rax)
 		je create_bracket_table_open
 		cmpb $']', (%rdi, %rax)
@@ -50,7 +50,7 @@ brainfuck:
 	pushq %rbp
 	movq %rsp, %rbp
 
-	# === OUR CODE === 
+	# === OUR CODE ===
 
 	pushq %rdi
 	subq $8, %rsp
@@ -59,7 +59,7 @@ brainfuck:
 	popq %rdi
 
 	# Instruction pointer: r8, data pointer: r9
-	movq $0, %r8 
+	movq $0, %r8
 	movq $0, %r9
 
 	# while instruction != 0x00
@@ -127,7 +127,7 @@ brainfuck:
 			movq $format_str, %rdi
 			call printf
 			movq $0, %rax
-			
+
 			addq $8, %rsp
 			popq %r9
 			popq %r8
@@ -145,7 +145,7 @@ brainfuck:
 			cmpb $0, DATA(%r9)
 			jne continue
 
-			movq BRACKETS(, %r8, 2), %r8
+			movzwq BRACKETS(, %r8, 2), %r8
 
 			jmp continue
 
@@ -155,7 +155,7 @@ brainfuck:
 			cmpb $0, DATA(%r9)
 			je continue
 
-			movq BRACKETS(, %r8, 2), %r8
+			movzwq BRACKETS(, %r8, 2), %r8
 
 			jmp continue
 
