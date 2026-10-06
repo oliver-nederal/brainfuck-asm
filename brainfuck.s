@@ -15,14 +15,15 @@ create_bracket_table:
 	# When open bracket, push its IP to stack
 	# When close bracket, pop off stack and add both pairs (open, close) and (close, open)
 
-	xor %ax, %ax # i = 0
+	xor %rax, %rax # i = 0
+	xor %rcx, %rcx
 	create_bracket_table_loop:
-		cmp $0, (%rdi, %ax)
+		cmpb $0, (%rdi, %rax)
 		je create_bracket_table_loop_done
 		
-		cmp $'[', (%rdi, %ax)
+		cmpb $'[', (%rdi, %rax)
 		je create_bracket_table_open
-		cmp $']', (%rdi, %ax)
+		cmpb $']', (%rdi, %rax)
 		je create_bracket_table_close
 		jmp create_bracket_table_loop_continue
 
@@ -31,8 +32,8 @@ create_bracket_table:
 			jmp create_bracket_table_loop_continue
 		create_bracket_table_close:
 			popw %cx
-			movq %cx, (BRACKETS, 2, %ax)
-			movq %ax, (BRACKETS, 2, %cx)
+			movw %cx, BRACKETS(, %rax, 2)
+			movw %ax, BRACKETS(, %rcx, 2)
 			jmp create_bracket_table_loop_continue
 
 		create_bracket_table_loop_continue:
@@ -50,7 +51,11 @@ brainfuck:
 
 	# === OUR CODE === 
 
-	
+	pushq %rdi
+	subq $8, %rsp
+	call create_bracket_table
+	addq $8, %rsp
+	popq %rdi
 
 	# Instruction pointer: r8, data pointer: r9
 	movq $0, %r8 
@@ -139,28 +144,7 @@ brainfuck:
 			cmpb $0, DATA(%r9)
 			jne continue
 
-			xor %r10, %r10 # Counter = 0
-			# Scan ahead to find closing bracket
-			lookahead_loop:
-				inc %r8
-				cmpb $']', (%rdi, %r8)
-				je closing1
-				cmpb $'[', (%rdi, %r8)
-				je opening1
-				jmp lookahead_loop
-
-				# If ] && counter == 0 : found closing
-				# If ] : counter-- 
-				# If [ : counter++
-				closing1:
-					cmp $0, %r10
-					je continue
-					dec %r10
-					jmp lookahead_loop
-
-				opening1:
-					inc %r10
-					jmp lookahead_loop
+			movq BRACKETS(, %r8, 2), %r8
 
 			jmp continue
 
@@ -170,28 +154,7 @@ brainfuck:
 			cmpb $0, DATA(%r9)
 			je continue
 
-			xor %r10, %r10 # Counter = 0
-			# Scan behind to find opening bracket
-			lookbehind_loop:
-				inc %r8
-				cmpb $']', (%rdi, %r8)
-				je closing2
-				cmpb $'[', (%rdi, %r8)
-				je opening2
-				jmp lookahead_loop
-
-				# If ] && counter == 0 : found closing
-				# If ] : counter-- 
-				# If [ : counter++
-				closing2:
-					cmp $0, %r10
-					je continue
-					dec %r10
-					jmp lookahead_loop
-
-				opening2:
-					inc %r10
-					jmp lookahead_loop
+			movq BRACKETS(, %r8, 2), %r8
 
 			jmp continue
 
