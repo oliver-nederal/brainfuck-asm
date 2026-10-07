@@ -5,6 +5,7 @@ format_str: .asciz "%c"
 # INSTR: .skip 64 * 1024
 DATA: .skip 64 * 1024
 # 3 bits opcode, 16 bits operand (count or jump target instruction pointer) = 19 bits => 3 bytes per instruction
+# First byte is opcode, next 2 are operand
 BYTECODE: .skip 64 * 1024 * 3
 BRACKETS: .skip 64 * 1024 * 2 * 2
 .text
@@ -48,8 +49,63 @@ create_bracket_table:
 	popq %rbp
 	ret
 
+# RDI - instruction
+# Return rax (least significant 3 bits - opcode)
+get_opcode:
+	pushq %rbp
+	movq %rsp, %rbp
+
+	cmpb $'>', %rdi
+	je opcode_0
+	cmpb $'<', %rdi
+	je opcode_1
+	cmpb $'+', %rdi
+	je opcode_2
+	cmpb $'-', %rdi
+	je opcode_3
+	cmpb $'.', %rdi
+	je opcode_4
+	cmpb $',', %rdi
+	je opcode_5
+	cmpb $'[', %rdi
+	je opcode_6
+	cmpb $']', %rdi
+	je opcode_7
+	
+	opcode_0:
+	movb $0, %ax
+	jmp done2
+	opcode_1:
+	movb $1, %ax
+	jmp done2
+	opcode_2:
+	movb $2, %ax
+	jmp done2
+	opcode_3:
+	movb $3, %ax
+	jmp done2
+	opcode_4:
+	movb $4, %ax
+	jmp done2
+	opcode_5:
+	movb $5, %ax
+	jmp done2
+	opcode_6:
+	movb $6, %ax
+	jmp done2
+	opcode_7:
+	movb $7, %ax
+	jmp done2
+
+	done2:
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+
+
 # Arguments: RDI - pointer to null terminated instruction string
 # Writes bytecode to BYTECODE label
+# NOTE: Bracket table must be generated first
 /*
 Opcodes:
 000 : >(n)
@@ -67,9 +123,9 @@ gen_bytecode:
 
 	# See rle.py for high-level implementation
 	
-	xor %ax, %ax # Last
+	xor %rax, %rax # Last (ax)
 	xor %r9, %r9 # Count
-	xor %r10, %r10 # Loop index
+	xor %r10, %r10 # Loop index (and also instruction pointer)
 	xor %r11, %r11 # Bytecode top pointer
 	# For char in string
 	gen_bytecode_loop:
@@ -94,8 +150,42 @@ gen_bytecode:
 		# Not compressible
 
 		# Add to bytecode
+			# First, write opcode to first byte
+
+			pushq %rdi
+			# Char is in rax
+			movq %rax, %rdi
+			pushq %rax
+			call get_opcode
+			movq %rax, %rdx # rdx - opcode (lower 3 bits)
+			popq %rax
+			popq %rdi
+
+			# dl now stores 00000xxx, so shift 5 to the left
+			# First byte is opcode
+			movb %dl, BYTECODE(%r11) 
 			
+			# If [ or ] then operand should be jump target
+			cmpb $'[', %ax
+			je has_operands
+			cmpb $']', %ax
+			je has_operands
+
+			jmp no_operands
+
+			has_operands:
+				# Operand is jump target
+				# r10 is the instruction pointer
+				movw %r10, %dx
+				andq %dx, %0xFFFF
+				movd %dl, BYTECODE($8, %r11) 
+
+
+
+			no_operands:
+
 			inc %r11 # Move to next bytecode location
+			xor %r9, %r9 # Reset count to 0
 
 		jmp gen_bytecode_loop_continue
 
