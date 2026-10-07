@@ -242,6 +242,14 @@ brainfuck:
 
 	pushq %rdi
 	subq $8, %rsp
+
+	call gen_bytecode
+
+	addq $8, %rsp
+	popq %rdi
+
+	pushq %rdi
+	subq $8, %rsp
 	call create_bracket_table
 	addq $8, %rsp
 	popq %rdi
