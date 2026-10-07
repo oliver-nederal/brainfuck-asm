@@ -209,7 +209,6 @@ gen_bytecode:
 			popq %rax
 			popq %rdi
 
-			# dl now stores 00000xxx, so shift 5 to the left
 			# First byte is opcode
 			movb %dl, BYTECODE(%r11)
 
@@ -234,9 +233,32 @@ gen_bytecode:
 	popq %rbp
 	ret
 
+gen_machine_code:
+	pushq %rbp
+	movq %rsp, %rbp
+
+	# r8 - index
+	xor %r8, %r8
+	xor %al, %al # ax - opcode
+	xor %cl, %cl # cl - operand higher bits
+	xor %dl, %dl # dl - operand lower bits
+
+	gen_machine_code_loop:
+		movb BYTECODE(%r8), %ax 
+		movb BYTECODE(%r8, 1), %ax 
+
+		jmp gen_bytecode_loop
+	gen_machine_code_loop_end:
+
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+
 brainfuck:
 	pushq %rbp
 	movq %rsp, %rbp
+	pushq %r14
+	pushq %r15
 
 	# === OUR CODE ===
 
@@ -257,17 +279,29 @@ brainfuck:
 
 	pushq %rdi
 	subq $8, %rsp
-
-	call gen_bytecode
-
+	call create_bracket_table
 	addq $8, %rsp
 	popq %rdi
 
 	pushq %rdi
 	subq $8, %rsp
-	call create_bracket_table
+	call gen_bytecode
 	addq $8, %rsp
 	popq %rdi
+
+	xor %r15, %r15
+	# r14 - bytecode pointer
+	# r15 - bytecode offset
+	# 4d 31 c9 - xor r9, r9
+	# c3 - ret
+	movb $0x4d, (%r14, %r15)
+	inc %r15
+	movb $0x31, (%r14, %r15)
+	inc %r15
+	movb $0xc9, (%r14, %r15)
+	inc %r15
+	movb $0xc3, (%r14, %r15)
+	inc %r15
 
 	# Instruction pointer: r8, data pointer: r9
 	movq $0, %r8
@@ -390,10 +424,15 @@ brainfuck:
 
 	# mprotect the code buffer
     movq    %r14, %rdi
-    movq    $64*1000000, %rsi
+    movq    $4*1000000, %rsi
     movq    $(0x1|0x4), %rdx
     movq    $10, %rax
     syscall
+
+	call %r14
+
+	popq %r15
+	popq %r14
 
 	# ================
 

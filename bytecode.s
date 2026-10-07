@@ -17,6 +17,11 @@ Opcodes:
 
 # r9 - data pointer
 # 000 - >(n)
+
+xor %r9, %r9
+
+ret
+
 add_dp:
     addq $0x1234, %r9
 
@@ -59,8 +64,8 @@ accept_input:
     movb %al, DATA(%r9)
 # 110 : [
 loop_start:
-    jmp $0xABCD
+    # jmp $0x00000000ABCD
 
 # 110 : [
 loop_end:
-    jmp $0xCDEF
+    # jmp $0x00000000CDEF
