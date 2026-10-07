@@ -4,6 +4,8 @@ format_str: .asciz "%c"
 .bss
 # INSTR: .skip 64 * 1024
 DATA: .skip 64 * 1024
+# 3 bits opcode, 16 bits operand (count or jump target instruction pointer) = 19 bits => 3 bytes per instruction
+BYTECODE: .skip 64 * 1024 * 3
 BRACKETS: .skip 64 * 1024 * 2 * 2
 .text
 
@@ -41,6 +43,72 @@ create_bracket_table:
 		jmp create_bracket_table_loop
 
 	create_bracket_table_loop_done:
+
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+
+# Arguments: RDI - pointer to null terminated instruction string
+# Writes bytecode to BYTECODE label
+/*
+Opcodes:
+000 : >(n)
+001 : <(n)
+010 : +(n)
+011 : -(n)
+100 : .
+101 : ,
+110 : [(i)
+111 : ](i)
+*/
+gen_bytecode:
+	pushq %rbp
+	movq %rsp, %rbp
+
+	# See rle.py for high-level implementation
+	
+	xor %ax, %ax # Last
+	xor %r9, %r9 # Count
+	xor %r10, %r10 # Loop index
+	xor %r11, %r11 # Bytecode top pointer
+	# For char in string
+	gen_bytecode_loop:
+		# Check if reached end of string
+		cmpb $0, (%rdi, %r10)
+		je gen_bytecode_loop_done
+
+		# check that last is set (edge case on first iteration)
+		cmpb $0, %ax
+		je gen_bytecode_loop_continue
+
+		# Check if last char is compressible (+-><)
+		cmpb $'+', %ax
+		je compressible
+		cmpb $'-', %ax
+		je compressible
+		cmpb $'>', %ax
+		je compressible
+		cmpb $'<', %ax
+		je compressible
+
+		# Not compressible
+
+		# Add to bytecode
+			
+			inc %r11 # Move to next bytecode location
+
+		jmp gen_bytecode_loop_continue
+
+		compressible:
+
+
+		gen_bytecode_loop_continue:
+			inc %r9 # count++
+			movb (%rdi, %r10), %ax # last = current
+			inc %r10 # i++
+
+	gen_bytecode_loop_done:
+
 
 	movq %rbp, %rsp
 	popq %rbp
