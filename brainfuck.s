@@ -74,7 +74,7 @@ get_opcode:
 	je opcode_6
 	cmpb $']', %al
 	je opcode_7
-	
+
 	opcode_0:
 	movq $0, %rax
 	jmp done2
@@ -125,7 +125,7 @@ gen_bytecode:
 	movq %rsp, %rbp
 
 	# See rle.py for high-level implementation
-	
+
 	xor %rax, %rax # Last (al)
 	xor %r9, %r9 # Count
 	xor %r10, %r10 # Loop index (and also instruction pointer)
@@ -166,8 +166,8 @@ gen_bytecode:
 
 			# dl now stores 00000xxx, so shift 5 to the left
 			# First byte is opcode
-			movb %dl, BYTECODE(%r11) 
-			
+			movb %dl, BYTECODE(%r11)
+
 			# If [ or ] then operand should be jump target
 			cmpb $'[', %al
 			je has_operands
@@ -183,7 +183,7 @@ gen_bytecode:
 				andq $0xFFFF, %rdx
 				movq %r11, %rsi
 				addq 8, %rsi
-				movw %dx, BYTECODE(%rsi) 
+				movw %dx, BYTECODE(%rsi)
 
 			no_operands:
 				# Opcode was already written
@@ -211,12 +211,12 @@ gen_bytecode:
 
 			# dl now stores 00000xxx, so shift 5 to the left
 			# First byte is opcode
-			movb %dl, BYTECODE(%r11) 
+			movb %dl, BYTECODE(%r11)
 
 			# Write operand (count, r9)
 			movq %r9, %rsi
 			addq 8, %rsi
-			movw %dx, BYTECODE(%rsi) 
+			movw %dx, BYTECODE(%rsi)
 
 			# Reset count to zero
 			xor %r9, %r9
@@ -239,6 +239,21 @@ brainfuck:
 	movq %rsp, %rbp
 
 	# === OUR CODE ===
+
+	pushq %rdi
+
+	# create mmap table for code buffer
+	movq    $0, %rdi                        # addr = NULL
+	movq    $4*1000000, %rsi                # length fixed here to 4MB
+	movq    $(0x1|0x2), %rdx                # prot = PROT_READ | PROT_WRITE
+	movq    $(0x02|0x20), %r10              # flags = MAP_PRIVATE | MAP_ANON
+	movq    $-1, %r8                        # fd = -1
+	movq    $0, %r9                         # offset = 0
+	movq    $9, %rax
+	syscall
+	movq    %rax, %r14                      # move the code buffer space into r14
+
+	popq %rdi
 
 	pushq %rdi
 	subq $8, %rsp
@@ -372,6 +387,13 @@ brainfuck:
 
 		jmp instruction_loop
 	done:
+
+	# mprotect the code buffer
+    movq    %r14, %rdi
+    movq    $64*1000000, %rsi
+    movq    $(0x1|0x4), %rdx
+    movq    $10, %rax
+    syscall
 
 	# ================
 
