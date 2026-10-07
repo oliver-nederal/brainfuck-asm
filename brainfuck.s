@@ -316,13 +316,11 @@ brainfuck:
 			pushq %r9
 			subq $8, %rsp
 
-			xor %rax, %rax
-			movb DATA(%r9), %al
-			movq %rax, %rsi
+			movzxb DATA(%r9), %rsi
 
 			movq $format_str, %rdi
-			call printf
 			movq $0, %rax
+			call printf
 
 			addq $8, %rsp
 			popq %r9
