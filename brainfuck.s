@@ -123,7 +123,7 @@ gen_bytecode:
 
 	# See rle.py for high-level implementation
 	
-	xor %rax, %rax # Last (ax)
+	xor %rax, %rax # Last (al)
 	xor %r9, %r9 # Count
 	xor %r10, %r10 # Loop index (and also instruction pointer)
 	xor %r11, %r11 # Bytecode top pointer
@@ -166,9 +166,9 @@ gen_bytecode:
 			movb %dl, BYTECODE(%r11) 
 			
 			# If [ or ] then operand should be jump target
-			cmpb $'[', %ax
+			cmpb $'[', %al
 			je has_operands
-			cmpb $']', %ax
+			cmpb $']', %al
 			je has_operands
 
 			jmp no_operands
@@ -176,13 +176,12 @@ gen_bytecode:
 			has_operands:
 				# Operand is jump target
 				# r10 is the instruction pointer
-				movw %r10, %dx
-				andq %dx, %0xFFFF
-				movd %dl, BYTECODE($8, %r11) 
-
-
+				movq %r10, %rdx
+				andq %rdx, %0xFFFF
+				movd %dx, BYTECODE($8, %r11) 
 
 			no_operands:
+				# Opcode was already written
 
 			inc %r11 # Move to next bytecode location
 			xor %r9, %r9 # Reset count to 0
@@ -190,11 +189,37 @@ gen_bytecode:
 		jmp gen_bytecode_loop_continue
 
 		compressible:
+			# Must have current != last
+			cmpb %al, (%rdi, %r10)
+			je gen_bytecode_loop_continue
+
+			# Write opcode (duplicated code)
+
+			pushq %rdi
+			# Char is in rax
+			movq %rax, %rdi
+			pushq %rax
+			call get_opcode
+			movq %rax, %rdx # rdx - opcode (lower 3 bits)
+			popq %rax
+			popq %rdi
+
+			# dl now stores 00000xxx, so shift 5 to the left
+			# First byte is opcode
+			movb %dl, BYTECODE(%r11) 
+
+			# Write operand (count, r9)
+			movq %r9, %rdx
+			andq %rdx, %0xFFFF
+			movd %dx, BYTECODE($8, %r11) 
+
+			# Reset count to zero
+			xor %r9, %r9
 
 
 		gen_bytecode_loop_continue:
 			inc %r9 # count++
-			movb (%rdi, %r10), %ax # last = current
+			movb (%rdi, %r10), %al # last = current
 			inc %r10 # i++
 
 	gen_bytecode_loop_done:
