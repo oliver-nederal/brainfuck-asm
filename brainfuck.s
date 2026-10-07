@@ -244,8 +244,8 @@ gen_machine_code:
 	xor %dl, %dl # dl - operand lower bits
 
 	gen_machine_code_loop:
-		movb BYTECODE(%r8), %ax 
-		movb BYTECODE(%r8, 1), %ax 
+# 		movb BYTECODE(%r8), %ax 
+		# movb BYTECODE(%r8, 1), %ax 
 
 		jmp gen_bytecode_loop
 	gen_machine_code_loop_end:
@@ -259,8 +259,6 @@ brainfuck:
 	movq %rsp, %rbp
 	pushq %r14
 	pushq %r15
-
-	# === OUR CODE ===
 
 	pushq %rdi
 
@@ -429,12 +427,10 @@ brainfuck:
     movq    $10, %rax
     syscall
 
-	call %r14
+	call *%r14
 
 	popq %r15
 	popq %r14
-
-	# ================
 
 	movq %rbp, %rsp
 	popq %rbp
