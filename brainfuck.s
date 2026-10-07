@@ -55,46 +55,49 @@ get_opcode:
 	pushq %rbp
 	movq %rsp, %rbp
 
-	cmpb $'>', %rdi
+	xor %rax, %rax
+	movq %rdi, %rax
+
+	cmpb $'>', %al
 	je opcode_0
-	cmpb $'<', %rdi
+	cmpb $'<', %al
 	je opcode_1
-	cmpb $'+', %rdi
+	cmpb $'+', %al
 	je opcode_2
-	cmpb $'-', %rdi
+	cmpb $'-', %al
 	je opcode_3
-	cmpb $'.', %rdi
+	cmpb $'.', %al
 	je opcode_4
-	cmpb $',', %rdi
+	cmpb $',', %al
 	je opcode_5
-	cmpb $'[', %rdi
+	cmpb $'[', %al
 	je opcode_6
-	cmpb $']', %rdi
+	cmpb $']', %al
 	je opcode_7
 	
 	opcode_0:
-	movb $0, %ax
+	movq $0, %rax
 	jmp done2
 	opcode_1:
-	movb $1, %ax
+	movq $1,  %rax
 	jmp done2
 	opcode_2:
-	movb $2, %ax
+	movq $2,  %rax
 	jmp done2
 	opcode_3:
-	movb $3, %ax
+	movq $3,  %rax
 	jmp done2
 	opcode_4:
-	movb $4, %ax
+	movq $4,  %rax
 	jmp done2
 	opcode_5:
-	movb $5, %ax
+	movq $5,  %rax
 	jmp done2
 	opcode_6:
-	movb $6, %ax
+	movq $6,  %rax
 	jmp done2
 	opcode_7:
-	movb $7, %ax
+	movq $7,  %rax
 	jmp done2
 
 	done2:
@@ -134,17 +137,17 @@ gen_bytecode:
 		je gen_bytecode_loop_done
 
 		# check that last is set (edge case on first iteration)
-		cmpb $0, %ax
+		cmpb $0, %al
 		je gen_bytecode_loop_continue
 
 		# Check if last char is compressible (+-><)
-		cmpb $'+', %ax
+		cmpb $'+', %al
 		je compressible
-		cmpb $'-', %ax
+		cmpb $'-', %al
 		je compressible
-		cmpb $'>', %ax
+		cmpb $'>', %al
 		je compressible
-		cmpb $'<', %ax
+		cmpb $'<', %al
 		je compressible
 
 		# Not compressible
@@ -177,8 +180,10 @@ gen_bytecode:
 				# Operand is jump target
 				# r10 is the instruction pointer
 				movq %r10, %rdx
-				andq %rdx, %0xFFFF
-				movd %dx, BYTECODE($8, %r11) 
+				andq $0xFFFF, %rdx
+				movq %r11, %rsi
+				addq 8, %rsi
+				movw %dx, BYTECODE(%rsi) 
 
 			no_operands:
 				# Opcode was already written
@@ -209,9 +214,9 @@ gen_bytecode:
 			movb %dl, BYTECODE(%r11) 
 
 			# Write operand (count, r9)
-			movq %r9, %rdx
-			andq %rdx, %0xFFFF
-			movd %dx, BYTECODE($8, %r11) 
+			movq %r9, %rsi
+			addq 8, %rsi
+			movw %dx, BYTECODE(%rsi) 
 
 			# Reset count to zero
 			xor %r9, %r9
