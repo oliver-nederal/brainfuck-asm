@@ -1,7 +1,5 @@
-.data
-format_str: .asciz "%c"
-AAA: .skip 10
-DATA: .skip 1
+.bss
+DATA: .skip 64 * 1024
 .text
 /*
 Opcodes:
@@ -11,61 +9,59 @@ Opcodes:
 011 : -(n)
 100 : .
 101 : ,
-110 : [(i)
-111 : ](i)
+110 : [
+111 : ]
 */
 
-# r9 - data pointer
+# Prologue
+	pushq %rbx
+	movl $DATA, %ebx
+
 # 000 - >(n)
-
-xor %r9, %r9
-
-ret
-
 add_dp:
-    addq $0x1234, %r9
+    addq $0x1234, %rbx
 
 # 001 - <(n)
 sub_dp:
-    subq $0x1234, %r9
+    subq $0x1234, %rbx
 
 # 010 : +(n)
 add_at_dp:
-    addq $0x1234, 0x456(%r9)
+    addb $0x12, (%rbx)
 
 # 011 : -(n)
 sub_at_dp:
-    subq $0x1234, 0x456(%r9)
+    subb $0x12, (%rbx)
 
 # 100 : .
 output_at_dp:
-    movq $format_str, %rdi
-    movzxb 0x456(%r9), %rsi
-    xor %rax, %rax
-
-    pushq %r9
-    subq $8, %rsp
-
-    call printf
-
-    addq $8, %rsp
-    popq %r9
+    movl $1, %eax
+    movl $1, %edi
+    movq %rbx, %rsi
+    movl $1, %edx
+    syscall
 
 # 101 : ,
 accept_input:
-    pushq %r9
-    subq $8, %rsp
+    movl $0, %eax
+    movl $0, %edi
+    movq %rbx, %rsi
+    movl $1, %edx
+    syscall
 
-    call getchar
-
-    addq $8, %rsp
-    popq %r9
-
-    movb %al, DATA(%r9)
 # 110 : [
+# jump offset is always 4 bytes, patched once the ] is known
 loop_start:
-    # jmp $0x00000000ABCD
+    cmpb $0, (%rbx)
+    .byte 0x0f, 0x84
+    .long 0
 
-# 110 : [
+# 111 : ]
 loop_end:
-    # jmp $0x00000000CDEF
+    cmpb $0, (%rbx)
+    .byte 0x0f, 0x85
+    .long 0
+
+# Epilogue
+	popq %rbx
+	ret

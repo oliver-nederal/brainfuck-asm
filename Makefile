@@ -1,8 +1,11 @@
 objects = build/main.o build/brainfuck.o build/read_file.o
-.PHONY: clean
+.PHONY: clean benchmark
 
 brainfuck: $(objects)
 	$(CC) -no-pie -o "$@" $^
+
+benchmark: brainfuck
+	python3 tests/performance.py --binary ./brainfuck
 
 build:
 	mkdir build

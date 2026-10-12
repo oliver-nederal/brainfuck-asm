@@ -1,2 +1,5 @@
 /build
 brainfuck
+brainfuck_old.s
+bytecode.o
+/tests/__pycache__
