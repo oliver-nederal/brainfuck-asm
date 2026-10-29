@@ -1,35 +1,19 @@
-# Brainfuck
+# Just-In-Time Compiler for Brainfuck in X86_64 Assembly
 
-These files should help you get started with your brainfuck implementation.
-In specific, they take care of the fiddly bit with reading a file.
+Implemented for the CSE11C course at the Delft University of Technology.
 
-There are a few files in here for you:
+Just in time compiler for Brainfuck written in x86_64 AT&T Assembly. Implements a decoder which does two passes over the given Brainfuck program, and then writes machine code to a code buffer. Thereafter, this buffer is made executable, and executes. This gives roughly a 34x speedup for average Brainfuck programs (compared to a interpreter) and potentially even more for even longer and more complicated code.
 
- - main.s:
-    This file contains the main function.
-    It reads a file from a command line argument and passes it to your brainfuck implementation.
+| Intepreter | Compiler | Speedup |   |   |
+|------------|----------|---------|---|---|
+| 0s         | 0s       | 1x      |   |   |
+| 0s         | 0s       | 1x      |   |   |
+| 0s         | 0s       | 1x      |   |   |
+| 0s         | 0s       | 1x      |   |   |
 
- - read_file.s:
-    Holds a subroutine for reading the contents of a file.
-    This subroutine is used by the main function in main.s.
+Done by [Oliver Nederal](https://github.com/oliver-nederal) and [Boris Krisanov](https://github.com/boriskrisanov)
 
- - brainfuck.s:
-    This is where you should put your brainfuck implementation.
-    In it you should define a `brainfuck` subroutine that takes
-    a single argument: a string holding the code to execute.
-
- - Makefile:
-    A file containing compilation information.  If you have a working make,
-    you can compile the code in this directory by simply running the command `make`.
-
-
-Feel free to have a look at the different files, but keep in mind that all you need to do is:
-
-  1. Edit `brainfuck.s`
-  2. Run `make`
-  3. Run `./brainfuck`
-
-## Performance tests
+## Performance tests (LLM-Assisted)
 
 Build the compiler/interpreter and run the correctness and performance suite with:
 
